@@ -1,0 +1,100 @@
+{
+  "name": "SourceDocument",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string"
+    },
+    "doc_type": {
+      "type": "string",
+      "enum": [
+        "driver_manual",
+        "spec",
+        "systems_list_text",
+        "extra_equipment",
+        "multimedia_manual",
+        "english_manual",
+        "screenshots"
+      ]
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "file_uri": {
+      "type": "string",
+      "description": "URI \u05e4\u05e8\u05d8\u05d9"
+    },
+    "pasted_text": {
+      "type": "string"
+    },
+    "extraction_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "done",
+        "error"
+      ],
+      "default": "pending"
+    },
+    "language": {
+      "type": "string"
+    },
+    "page_count": {
+      "type": "number"
+    },
+    "ocr_used": {
+      "type": "boolean",
+      "default": false
+    },
+    "indexed": {
+      "type": "boolean",
+      "default": false
+    },
+    "error_message": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "doc_type"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

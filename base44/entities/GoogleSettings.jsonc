@@ -1,0 +1,37 @@
+{
+  "name": "GoogleSettings",
+  "type": "object",
+  "properties": {
+    "connected": {
+      "type": "boolean",
+      "default": false
+    },
+    "account_email": {
+      "type": "string"
+    },
+    "folder_id": {
+      "type": "string"
+    },
+    "folder_name": {
+      "type": "string"
+    }
+  },
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

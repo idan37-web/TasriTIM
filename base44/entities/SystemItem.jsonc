@@ -1,0 +1,146 @@
+{
+  "name": "SystemItem",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string"
+    },
+    "name_he": {
+      "type": "string"
+    },
+    "name_commercial": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "\u05d1\u05d8\u05d9\u05d7\u05d5\u05ea",
+        "\u05e0\u05d5\u05d7\u05d5\u05ea",
+        "\u05de\u05d5\u05dc\u05d8\u05d9\u05de\u05d3\u05d9\u05d4",
+        "\u05e9\u05d9\u05de\u05d5\u05e9\u05d9\u05d5\u05ea",
+        "\u05e0\u05d4\u05d9\u05d2\u05d4",
+        "\u05ea\u05d0\u05d5\u05e8\u05d4",
+        "\u05d0\u05d7\u05e8\u05ea"
+      ],
+      "default": "\u05d0\u05d7\u05e8\u05ea"
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "availability_status": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "not_in_spec",
+        "missing_ops",
+        "manual"
+      ],
+      "default": "verified"
+    },
+    "requires_operation": {
+      "type": "boolean",
+      "default": true
+    },
+    "can_disable": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u05e9\u05d3\u05d4 \u05de\u05d3\u05d5\u05e8 \u05e7\u05d5\u05d3\u05dd \u2014 \u05e0\u05e9\u05de\u05e8 \u05dc\u05ea\u05d0\u05d9\u05de\u05d5\u05ea \u05dc\u05d0\u05d7\u05d5\u05e8; \u05d4\u05de\u05e7\u05d5\u05e8 \u05d4\u05e7\u05d5\u05d1\u05e2 \u05d4\u05d5\u05d0 disable_capability"
+    },
+    "disable_capability": {
+      "type": "string",
+      "enum": [
+        "yes",
+        "no",
+        "unknown"
+      ],
+      "default": "unknown",
+      "description": "\u05d4\u05d0\u05dd \u05e0\u05d9\u05ea\u05df \u05dc\u05d4\u05e9\u05d1\u05d9\u05ea \u05d0\u05ea \u05d4\u05de\u05e2\u05e8\u05db\u05ea: yes/no \u05e8\u05e7 \u05d1\u05e8\u05d0\u05d9\u05d4 \u05de\u05e4\u05d5\u05e8\u05e9\u05ea, \u05d0\u05d7\u05e8\u05ea unknown"
+    },
+    "has_ops_instructions": {
+      "type": "boolean",
+      "default": false
+    },
+    "included": {
+      "type": "boolean",
+      "default": false
+    },
+    "allow_partial_evidence": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u05d0\u05d9\u05e9\u05d5\u05e8 \u05d4\u05de\u05e9\u05ea\u05de\u05e9 \u05dc\u05db\u05ea\u05d5\u05d1 \u05e2\u05dc \u05d4\u05de\u05e2\u05e8\u05db\u05ea \u05d2\u05dd \u05dc\u05dc\u05d0 \u05d4\u05e1\u05d1\u05e8 \u05ea\u05e4\u05e2\u05d5\u05dc\u05d9 \u05e4\u05e8\u05d8\u05e0\u05d9 \u05d1\u05e1\u05e4\u05e8 \u05d4\u05e0\u05d4\u05d2"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "default": "medium"
+    },
+    "why_training": {
+      "type": "string"
+    },
+    "source_note": {
+      "type": "string"
+    },
+    "source_pages": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "mismatch_note": {
+      "type": "string"
+    },
+    "manual_added": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "project_id",
+    "name_he"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

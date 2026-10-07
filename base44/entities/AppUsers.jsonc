@@ -1,0 +1,52 @@
+{
+  "name": "AppUsers",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "\u05d0\u05d9\u05de\u05d9\u05d9\u05dc (lowercase)"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "appRole": {
+      "type": "string",
+      "enum": [
+        "SystemAdmin",
+        "ScriptCreator"
+      ],
+      "default": "ScriptCreator"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "invitedBy": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "email"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

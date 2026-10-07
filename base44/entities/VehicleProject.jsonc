@@ -1,0 +1,102 @@
+{
+  "name": "VehicleProject",
+  "type": "object",
+  "properties": {
+    "manufacturer": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    },
+    "model_year": {
+      "type": "string"
+    },
+    "market": {
+      "type": "string"
+    },
+    "trim_level": {
+      "type": "string"
+    },
+    "drivetrain": {
+      "type": "string"
+    },
+    "seats": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "systems_identified",
+        "plan_approved",
+        "generated",
+        "published"
+      ],
+      "default": "draft"
+    },
+    "current_step": {
+      "type": "number",
+      "default": 1
+    },
+    "allowed_user_emails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "prompt_version": {
+      "type": "number"
+    }
+  },
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.allowed_user_emails": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.allowed_user_emails": {
+            "$in": [
+              "{{user.email}}"
+            ]
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "name": "PromptVersion",
+  "type": "object",
+  "properties": {
+    "version_number": {
+      "type": "number"
+    },
+    "content": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": false
+    },
+    "created_by_email": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "version_number",
+    "content"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

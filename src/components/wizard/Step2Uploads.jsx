@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Upload, FileText, Trash2, Loader2, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { splitLargePdf } from '@/lib/pdfSplit';
@@ -128,7 +127,7 @@ export default function Step2Uploads({ project, goToStep }) {
   return (
     <div className="max-w-3xl space-y-5">
       <UploadProgress docs={docs} />
-      <div className="bg-white rounded-2xl border border-stone-200 p-6 md:p-8">
+      <div className="surface p-6 md:p-8">
         <h2 className="text-lg font-bold text-stone-900 mb-1">העלאת מקורות</h2>
         <p className="text-sm text-stone-500 mb-6">
           נתמכים PDF, DOCX, XLSX, CSV ו‑TXT, כולל PDF סרוק (OCR). כל המסמכים נשמרים כקבצים פרטיים.
@@ -214,7 +213,7 @@ export default function Step2Uploads({ project, goToStep }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-stone-200 p-6 md:p-8">
+      <div className="surface p-6 md:p-8">
         <h3 className="font-bold text-stone-900 mb-2 text-sm">הדבקת רשימת מערכות ידנית</h3>
         <Textarea
           value={pasteText}

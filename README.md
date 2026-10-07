@@ -1,3 +1,23 @@
+# מחולל תסריטי הדרכה לרכב
+
+## הגדרת מודל ה-AI (Claude)
+
+כל הקריאות למודל עוברות דרך `base44/shared/llm.ts` ישירות ל-Anthropic API, ולא דרך `Core.InvokeLLM`.
+
+1. צרו מפתח API ב-[Claude Console](https://platform.claude.com/settings/keys).
+2. ב-Base44: הגדרות האפליקציה ← Secrets, הוסיפו `ANTHROPIC_API_KEY` (או `base44 secrets set ANTHROPIC_API_KEY=...`).
+3. אופציונלי:
+
+| סוד | ברירת מחדל | שימוש |
+|---|---|---|
+| `CLAUDE_MODEL` | `claude-opus-5-5` | כתיבה, זיהוי מערכות, בדיקת עברית |
+| `CLAUDE_FAST_MODEL` | כמו `CLAUDE_MODEL` | OCR וניתוב ראיות. `claude-sonnet-5-5` זול ומהיר יותר |
+| `CLAUDE_WRITER_EFFORT` | `medium` | מאמץ הניסיון הראשון בכתיבה (`low`/`medium`/`high`) |
+
+אחרי ההגדרה, מסך "ניהול" מציג אם המודל זמין.
+
+---
+
 # Base44 Project
 
 Use this repository to run and edit the app locally, then publish changes back through Base44.

@@ -91,7 +91,7 @@ export default function Admin() {
       <h1 className="text-2xl font-bold text-stone-900">ניהול מערכת</h1>
 
       {/* חיבור Google */}
-      <div className="bg-white rounded-2xl border border-stone-200 p-6">
+      <div className="surface p-6">
         <h2 className="font-semibold text-stone-800 mb-3">חיבור Google</h2>
         <div className="flex items-center gap-2 text-sm">
           {google?.connected ? (
@@ -114,21 +114,27 @@ export default function Admin() {
       </div>
 
       {/* סטטוס מודל */}
-      <div className="bg-white rounded-2xl border border-stone-200 p-6">
-        <h2 className="font-semibold text-stone-800 mb-3">מודל ה‑AI הקשיח</h2>
+      <div className="surface p-6">
+        <h2 className="font-semibold text-stone-800 mb-3">מודל ה‑AI</h2>
         <div className="flex items-center gap-2 text-sm">
           {!model ? (
             <Loader2 className="w-4 h-4 animate-spin text-stone-400" />
           ) : model.available ? (
-            <><CheckCircle2 className="w-4 h-4 text-emerald-500" /> gpt-5.6-sol זמין</>
+            <><CheckCircle2 className="w-4 h-4 text-emerald-500" /> {model.required_model || 'המודל'} זמין <span className="text-xs text-stone-400" dir="ltr">({model.model_id})</span></>
           ) : (
-            <><XCircle className="w-4 h-4 text-red-400" /> gpt-5.6-sol אינו זמין — יצירת תסריטים חסומה (ללא fallback)</>
+            <><XCircle className="w-4 h-4 text-red-400" /> {model.required_model || 'המודל'} אינו זמין, יצירת תסריטים חסומה{model.error ? ` (${model.error})` : ''}</>
           )}
         </div>
+        {model && !model.available && (
+          <p className="text-xs text-stone-400 mt-2 leading-relaxed">
+            יש להגדיר את הסוד <span dir="ltr" className="font-mono">ANTHROPIC_API_KEY</span> בהגדרות האפליקציה ב‑Base44
+            (Settings ← Secrets). אפשר לבחור מודל אחר עם הסוד <span dir="ltr" className="font-mono">CLAUDE_MODEL</span>.
+          </p>
+        )}
       </div>
 
       {/* גרסאות פרומפט */}
-      <div className="bg-white rounded-2xl border border-stone-200 p-6">
+      <div className="surface p-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-stone-800">פרומפט המערכת הנעול</h2>
           <Dialog open={promptOpen} onOpenChange={(o) => { setPromptOpen(o); if (o) setNewPrompt(active?.content || ''); }}>
@@ -166,7 +172,7 @@ export default function Admin() {
       </div>
 
       {/* משתמשים */}
-      <div className="bg-white rounded-2xl border border-stone-200 p-6">
+      <div className="surface p-6">
         <h2 className="font-semibold text-stone-800 mb-3">משתמשים והרשאות</h2>
         <div className="flex gap-2 mb-4 flex-wrap">
           <Input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="אימייל להזמנה" className="rounded-xl flex-1 min-w-[180px]" dir="ltr" />

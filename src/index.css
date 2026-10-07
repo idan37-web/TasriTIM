@@ -4,34 +4,34 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 220 20% 97%;
+    --foreground: 220 34% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 220 34% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 220 34% 12%;
+    --primary: 220 34% 12%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 20% 94%;
+    --secondary-foreground: 220 34% 12%;
+    --muted: 220 20% 94%;
+    --muted-foreground: 219 13% 45%;
+    --accent: 220 20% 94%;
+    --accent-foreground: 220 34% 12%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --border: 220 18% 89%;
+    --input: 220 18% 85%;
+    --ring: 36 80% 50%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --font-heading: 'Heebo', ui-sans-serif, system-ui, sans-serif;
+    --radius: 0.75rem;
+    --font-heading: 'Rubik', 'Heebo', ui-sans-serif, system-ui, sans-serif;
     --font-body: 'Heebo', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Heebo', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Rubik', 'Heebo', ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -87,6 +87,21 @@
   }
 
   body {
-    @apply bg-background text-foreground font-body;
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3 {
+    @apply font-heading tracking-tight;
+  }
+}
+
+@layer components {
+  /* כרטיס תוכן אחיד לכל שלבי האשף */
+  .surface {
+    @apply bg-white rounded-2xl border border-stone-200/80 shadow-card;
+  }
+  /* שורת טקסט קטנה בסגנון "תווית לוח מחוונים" */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-400;
   }
 }

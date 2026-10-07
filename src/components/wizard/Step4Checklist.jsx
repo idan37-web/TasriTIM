@@ -88,7 +88,7 @@ export default function Step4Checklist({ project, goToStep }) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-white rounded-2xl border border-stone-200 p-6">
+      <div className="surface p-6">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
           <div>
             <h2 className="text-lg font-bold text-stone-900">בחירת מערכות לתסריטים</h2>
@@ -145,7 +145,7 @@ export default function Step4Checklist({ project, goToStep }) {
       </div>
 
       {byCategory.map(({ cat, items }) => (
-        <div key={cat} className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+        <div key={cat} className="surface overflow-hidden">
           <div className="px-5 py-3 border-b border-stone-100 flex items-center justify-between">
             <span className="font-semibold text-stone-800 text-sm">{cat} ({items.length})</span>
             <div className="flex gap-2">

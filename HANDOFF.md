@@ -12,7 +12,7 @@
 ## 2. סטאק
 - Frontend: React 18 + Vite + Tailwind + shadcn/ui, עברית RTL.
 - Backend: Base44 BaaS — entities (JSON schema), backend functions (Deno, `base44/functions/<name>/entry.ts`), shared modules ב-`base44/shared/`.
-- LLM: `Core.InvokeLLM` עם מודל קשיח `gpt_5_6_sol` (מוצג למשתמש כ-gpt-5.6-sol). אין fallback — אם המודל לא זמין, היצירה חסומה.
+- LLM: Claude דרך Anthropic API (`base44/shared/llm.ts`), במקום `Core.InvokeLLM`. ברירת מחדל `claude-opus-5-5`, נשלט בסודות (ראו README). אין fallback למודל חלש — אם המפתח חסר או המודל לא זמין, היצירה חסומה.
 - Google Docs/Drive: דרך connector `googledocs` (scopes: documents, drive.file, email), בצד השרת בלבד.
 
 ## 3. ישויות (base44/entities)
@@ -41,7 +41,9 @@ RLS: כל ישות פרויקטלית — קריאה/עדכון לבעל הרש�
 7. `Step7Generate` — יצירה בשלבים + בר התקדמות + יצירת המסמך.
 
 ## 5. צינור היצירה (base44/functions/generateVehicleScripts)
-מפוצל לשלוש פעולות כדי לא לחרוג ממגבלת 120 שניות לבקשה. הלקוח קורא להן ברצף:
+> עודכן: הצינור כולל כעת גם `action=evidence` (ניתוב ראיות סמנטי לפני כל כתיבה) ו-`action=repair` (סבב תיקון בבקשה נפרדת). פירוט בסעיף 10.
+
+מפוצל לפעולות קצרות כדי לא לחרוג ממגבלת 120 שניות לבקשה. הלקוח קורא להן ברצף:
 1. `action=start` — `validatePlan` → בדיקת זמינות המודל → פרומפט פעיל → יצירת `GenerationJob` → החזרת רשימת `tasks` (כללי + כל קבוצה ממוקדת).
 2. `action=write` (פעם לכל task) — בניית חבילות ראיות (`buildEvidencePackets`), הרכבת הפרומפט הנעול + JSON נתוני הפרויקט, קריאה ל-LLM עם `SCRIPT_SCHEMA`, מיזוג התוצאה ל-`job.scripts`. ל-Step7 יש retry יחיד לכל task.
 3. `action=qa` — `runDeterministicAudit` (`base44/shared/qa.ts`) + בדיקת תוכן ועברית עם ה-LLM. `passed` רק אם אין אף issue.
@@ -87,3 +89,11 @@ base44/functions/indexManualContent/entry.ts       פילוח לקטעים
 src/components/wizard/Step1..Step7                 האשף
 src/pages/{Projects,ProjectWizard,Admin}.jsx       דפים
 ``
+
+## 10. מעבר ל-Claude (אוקטובר 2026)
+- **שכבת מודל אחת** — `base44/shared/llm.ts`: `callClaude()` עם פלט מובנה (`output_config.format`), streaming, תקרת זמן לכל קריאה, `fallbacks: "default"` לסירובים, ו-prompt caching על ה-system. כל `InvokeLLM` הוסר.
+- **חילוץ מסמכים** — PDF נקרא משכבת הטקסט עמוד-עמוד (`unpdf`), ללא מודל שמסכם. עמוד ריק, סרוק או בעברית הפוכה נשלח ל-Claude כ-PDF של 2 עמודים (OCR כולל טבלאות וכיתובי איורים). צילומי מסך נקראים ב-vision. DOCX/XLSX נשארו ב-`ExtractDataFromUploadedFile`.
+- **ניתוב ראיות סמנטי** — `selectEvidenceWithClaude()` ב-`evidence.ts`: Claude קורא אינדקס קומפקטי של כל ספר הנהג ובוחר עד 10 מקטעים לכל מערכת. המקטעים האלה נכנסים ראשונים לחבילת הראיות, במלואם. פותר את בעיית המונחים השונים בין מפרט לספר (סעיף 8.3).
+- **כתיבה** — הפרומפט הנעול + כללי הכתיבה נשלחים כ-system (נשמרים ב-cache בין התסריטים), הנתונים ב-`<project_data>`. ניסיון 1 במאמץ `medium`, ניסיונות 2–3 במאמץ `low` (מהיר יותר). שגיאה קבועה (מפתח שגוי) אינה מנוסה שוב.
+- **QA** — `runQaPass` / `runRepairPass` ב-`scriptQa.ts`: כל סבב בבקשה נפרדת; הלקוח מריץ qa ← repair ← qa עד 2 סבבים.
+- **זיהוי מערכות** — מקטעי מפרט גדולים יותר והקשר ספר נהג רחב יותר; `has_ops_instructions` של Claude עם עמודים נחשב לאימות, ו-`plan.ts` מוריד במקרה כזה חוסם לאזהרה.

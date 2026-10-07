@@ -73,12 +73,12 @@ export default function Step3Systems({ project, goToStep }) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-white rounded-2xl border border-stone-200 p-6 md:p-8">
+      <div className="surface p-6 md:p-8">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h2 className="text-lg font-bold text-stone-900 mb-1">זיהוי מערכות רלוונטיות</h2>
             <p className="text-sm text-stone-500 max-w-xl">
-              הניתוח מתבצע עם המודל gpt-5.6-sol על בסיס המסמכים שהועלו בלבד — ללא ידע חיצוני, ללא הגבלת מספר מערכות.
+              Claude מנתח את המפרט מול ספר הנהג, על בסיס המסמכים שהועלו בלבד: ללא ידע חיצוני וללא הגבלת מספר מערכות.
             </p>
           </div>
           <Button onClick={runExtraction} disabled={running} className="rounded-xl bg-stone-900 hover:bg-stone-700">
@@ -98,7 +98,7 @@ export default function Step3Systems({ project, goToStep }) {
       </div>
 
       {systems && systems.length > 0 && (
-        <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+        <div className="surface overflow-hidden">
           <div className="px-6 py-4 border-b border-stone-100 text-sm font-semibold text-stone-700">
             נמצאו {systems.length} מערכות מועמדות
           </div>

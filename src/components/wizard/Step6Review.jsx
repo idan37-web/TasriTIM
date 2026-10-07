@@ -30,7 +30,7 @@ export default function Step6Review({ project, updateProject, goToStep }) {
   if (!data || !validation || !model) {
     return (
       <div className="flex flex-col items-center py-20 gap-3">
-        <div className="w-7 h-7 border-4 border-stone-200 border-t-stone-800 rounded-full animate-spin" />
+        <div className="w-7 h-7 border-4 border-stone-200 border-t-signal-500 rounded-full animate-spin" />
         <p className="text-sm text-stone-400">מריץ בדיקות לפני יצירה...</p>
       </div>
     );
@@ -40,7 +40,7 @@ export default function Step6Review({ project, updateProject, goToStep }) {
   const excluded = data.systems.filter((s) => !s.included);
   const activeGroups = data.groups.filter((g) => !g.cancelled).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
   const blockers = [...(validation.blockers || [])];
-  if (!model.available) blockers.push('המודל gpt-5.6-sol אינו זמין — היצירה חסומה');
+  if (!model.available) blockers.push(`המודל ${model.required_model || 'Claude'} אינו זמין, היצירה חסומה${model.error ? ` (${model.error})` : ''}`);
   const canApprove = blockers.length === 0;
 
   const approve = async () => {
@@ -50,7 +50,7 @@ export default function Step6Review({ project, updateProject, goToStep }) {
   };
 
   const Section = ({ title, children }) => (
-    <div className="bg-white rounded-2xl border border-stone-200 p-5">
+    <div className="surface p-5">
       <h3 className="font-semibold text-stone-800 text-sm mb-3">{title}</h3>
       {children}
     </div>
@@ -134,7 +134,7 @@ export default function Step6Review({ project, updateProject, goToStep }) {
           </div>
           <div className="flex items-center gap-2">
             {model.available ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-red-400" />}
-            מודל gpt-5.6-sol: {model.available ? 'זמין' : 'אינו זמין'}
+            מודל {model.required_model || 'Claude'}: {model.available ? 'זמין' : 'אינו זמין'}
           </div>
         </div>
       </Section>

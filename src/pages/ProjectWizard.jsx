@@ -55,35 +55,48 @@ export default function ProjectWizard() {
   if (!project) {
     return (
       <div className="flex justify-center py-24">
-        <div className="w-7 h-7 border-4 border-stone-200 border-t-stone-800 rounded-full animate-spin" />
+        <div className="w-7 h-7 border-4 border-stone-200 border-t-signal-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   const stepProps = { project, updateProject, goToStep };
+  const subtitle = [project.trim_level, project.market, project.drivetrain].filter(Boolean).join(' · ');
 
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <Link to="/" className="text-stone-400 hover:text-stone-700 transition-colors">
-          <ArrowRight className="w-5 h-5" />
+        <Link
+          to="/"
+          className="w-9 h-9 rounded-xl surface flex items-center justify-center text-stone-400 hover:text-stone-800 transition-colors"
+          aria-label="חזרה לפרויקטים"
+        >
+          <ArrowRight className="w-4 h-4" />
         </Link>
-        <h1 className="text-xl font-bold text-stone-900">
-          {project.manufacturer || project.model
-            ? `${project.manufacturer || ''} ${project.model || ''} ${project.model_year || ''}`
-            : 'פרויקט חדש'}
-        </h1>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-stone-900 truncate">
+            {project.manufacturer || project.model
+              ? `${project.manufacturer || ''} ${project.model || ''} ${project.model_year || ''}`
+              : 'פרויקט חדש'}
+          </h1>
+          {subtitle && <p className="text-sm text-stone-400 truncate">{subtitle}</p>}
+        </div>
       </div>
 
-      <WizardSteps current={step} maxReached={project.current_step || 1} onSelect={setStep} />
-
-      {step === 1 && <Step1Details {...stepProps} />}
-      {step === 2 && <Step2Uploads {...stepProps} />}
-      {step === 3 && <Step3Systems {...stepProps} />}
-      {step === 4 && <Step4Checklist {...stepProps} />}
-      {step === 5 && <Step5Groups {...stepProps} />}
-      {step === 6 && <Step6Review {...stepProps} />}
-      {step === 7 && <Step7Generate {...stepProps} />}
+      <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
+        <aside>
+          <WizardSteps current={step} maxReached={project.current_step || 1} onSelect={setStep} />
+        </aside>
+        <section key={step} className="min-w-0 animate-fade-up">
+          {step === 1 && <Step1Details {...stepProps} />}
+          {step === 2 && <Step2Uploads {...stepProps} />}
+          {step === 3 && <Step3Systems {...stepProps} />}
+          {step === 4 && <Step4Checklist {...stepProps} />}
+          {step === 5 && <Step5Groups {...stepProps} />}
+          {step === 6 && <Step6Review {...stepProps} />}
+          {step === 7 && <Step7Generate {...stepProps} />}
+        </section>
+      </div>
     </div>
   );
 }

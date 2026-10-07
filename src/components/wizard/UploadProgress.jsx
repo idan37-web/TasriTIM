@@ -22,7 +22,7 @@ export default function UploadProgress({ docs }) {
     etaSec < 60 ? 'פחות מדקה' : `כ‑${Math.ceil(etaSec / 60)} דקות`;
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-200 p-5">
+    <div className="surface p-5">
       <div className="flex items-center justify-between mb-2 text-sm">
         <div className="font-medium text-stone-800 flex items-center gap-2">
           {remaining > 0 && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}

@@ -29,7 +29,7 @@ export default function Step1Details({ project, updateProject, goToStep }) {
   const canContinue = missing.length === 0;
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-200 p-6 md:p-8 max-w-3xl">
+    <div className="surface p-6 md:p-8 max-w-3xl">
       <h2 className="text-lg font-bold text-stone-900 mb-1">פרטי הדגם</h2>
       <p className="text-sm text-stone-500 mb-6">
         שנת הדגם, שוק היעד ורמת הגימור הם שדות חובה — ספרי נהג עשויים לתאר מספר גרסאות שונות.

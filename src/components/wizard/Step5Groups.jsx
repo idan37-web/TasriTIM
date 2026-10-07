@@ -104,7 +104,7 @@ export default function Step5Groups({ project, goToStep }) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-white rounded-2xl border border-stone-200 p-6">
+      <div className="surface p-6">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <h2 className="text-lg font-bold text-stone-900 mb-1">מפת התסריטים</h2>

@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { REQUIRED_MODEL } from '../../shared/constants.ts';
+import { callClaude } from '../../shared/llm.ts';
 
-// מציע מפת תסריטים (איחודים וסדר) באמצעות gpt-5.6-sol.
+// מציע מפת תסריטים (איחודים וסדר) באמצעות Claude.
 // אינו נוגע בקבוצות שהמשתמש ערך (user_modified) ואינו נוגע בסרטון הכללי.
 export default async function(req) {
   try {
@@ -55,15 +55,20 @@ export default async function(req) {
         category: s.category,
         why: s.why_training
       }));
-      suggestions = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      const res = await callClaude({
+        effort: 'medium',
+        deadlineMs: 100000,
         prompt: `אתה מתכנן מפת תסריטי הדרכה לרכב. לפניך רשימת מערכות שאושרו להכללה.
 הצע חלוקה לתסריטים: אחד מערכות באותו תסריט כאשר הן שייכות לאותו מסלול שימוש, מופעלות מאותו מסך או אזור שליטה, משלימות זו את זו, כל אחת לבדה קצרה מדי, צפויה חזרה על אותן הוראות, או שהצגתן יחד ברורה יותר ללקוח.
 דוגמאות לאיחוד רצוי: Apple CarPlay עם Android Auto; קיפול מושבי שורה שנייה ושלישית יחד; פתיחה ללא מפתח + נעילה + תא מטען + התנעה; חימום/אוורור/עיסוי מושבים.
 השאר מערכות בנפרד כאשר: פעולותיהן שונות מהותית, האיחוד מקשה על הבנת בטיחות, הן מופעלות מאזורים שונים לחלוטין, או שהתסריט המאוחד יהיה מסורבל.
 כל מערכת חייבת להופיע בדיוק בקבוצה אחת. תן לכל קבוצה שם תסריט בעברית וסיבת איחוד קצרה כשיש יותר ממערכת אחת, וקבע סדר הגיוני.
-המערכות (JSON): ${JSON.stringify(sysList)}`,
-        model: REQUIRED_MODEL,
-        response_json_schema: {
+merge_reason השאר ריק כשהקבוצה כוללת מערכת אחת בלבד.
+
+<systems>
+${JSON.stringify(sysList)}
+</systems>`,
+        schema: {
           type: 'object',
           properties: {
             groups: {
@@ -82,6 +87,7 @@ export default async function(req) {
           required: ['groups']
         }
       });
+      suggestions = res.data;
     }
 
     // אימות: כל מערכת חופשית מופיעה פעם אחת בדיוק

@@ -1,7 +1,7 @@
 // מקור אמת יחיד ל-QA של התסריטים: בדיקה דטרמיניסטית + Language/Content QA + Auto-Repair ממוקד.
 // משמש גם את generateVehicleScripts (action=qa) וגם את runScriptQualityAudit — אין שתי הגדרות ל-"passed".
 
-import { REQUIRED_MODEL } from './constants.ts';
+import { callClaude } from './llm.ts';
 import { runDeterministicAudit } from './qa.ts';
 
 export const MAX_REPAIR_ROUNDS = 2;
@@ -111,7 +111,13 @@ function languageQaPrompt(batch) {
     return `--- script_key: ${e.script_key}\nכותרת: ${e.script.title}\n${narration}`;
   }).join('\n\n');
 
-  return `אתה בודק איכות לתסריטי קריינות בעברית לסרטוני הדרכה לרכב.
+  return `<scripts>
+${body}
+</scripts>`;
+}
+
+// ההנחיות הקבועות של בודק השפה — נשלחות כ-system ונשמרות ב-cache בין ה-batches
+const LANGUAGE_QA_SYSTEM = `אתה עורך לשון ובודק איכות בכיר לתסריטי קריינות בעברית לסרטוני הדרכה לרכב. התסריטים מוקראים בקול, ולכן הקריטריון הוא עברית תקנית, טבעית וברורה לשמיעה.
 
 בדוק כל תסריט:
 1. category=language_error — שגיאת עברית ממשית בלבד: פועל שגוי, שורש או בניין שגויים, הטיה שגויה, שגיאת התאמה במין/מספר, שגיאת כתיב. ניסוח שנשמע מתורגם, מסורבל, חוזר או "אפשר לשפר" הוא style_note ולא שגיאה.
@@ -122,12 +128,9 @@ function languageQaPrompt(batch) {
 blocking_issues — פגם ממשי בלבד שאינו ניתן לפרסום, מהקטגוריות שלמעלה. בספק — style_note.
 style_notes — הערות סגנון וליטוש (חזרות, ניסוח מסורבל או מתורגם, אורך) שאינן חוסמות פרסום.
 
-חובה: בכל פריט השתמש ב-script_key בדיוק כפי שנשלח כאן. אל תתאר את התסריט במילים במקום מזהה.
+חובה: בכל פריט השתמש ב-script_key בדיוק כפי שהופיע בתסריט. אל תתאר את התסריט במילים במקום מזהה.
 אל תדווח על מידע תפעולי חסר — הוא מטופל בנפרד ואינו פגם.
-
---- התסריטים ---
-${body}`;
-}
+repair_instruction: ציין את הנוסח השגוי המדויק ואת הנוסח המתוקן, כדי שהעורך יחליף רק אותו.`;
 
 export async function runLanguageQa(base44, entries) {
   const validKeys = new Set(entries.map((e) => e.script_key));
@@ -136,12 +139,14 @@ export async function runLanguageQa(base44, entries) {
 
   const results = await withConcurrency(batches, CONCURRENCY, async (batch) => {
     try {
-      const res = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      const res = await callClaude({
+        system: LANGUAGE_QA_SYSTEM,
         prompt: languageQaPrompt(batch),
-        model: REQUIRED_MODEL,
-        response_json_schema: LANGUAGE_QA_SCHEMA
+        schema: LANGUAGE_QA_SCHEMA,
+        effort: 'medium',
+        deadlineMs: 100000
       });
-      return res || {};
+      return res.data || {};
     } catch (error) {
       warnings.push(`בדיקת שפה נכשלה עבור ${batch.length} תסריטים: ${error.message}`);
       return {};
@@ -208,9 +213,7 @@ export async function repairScripts(base44, scripts, issues) {
 
   const repaired = await withConcurrency(targets, CONCURRENCY, async (entry) => {
     const own = issues.filter((i) => i.script_key === entry.script_key);
-    const prompt = `${REPAIR_RULES}
-
---- כותרת התסריט ---
+    const prompt = `--- כותרת התסריט ---
 ${entry.script.title}
 
 --- הבעיות שיש לתקן ---
@@ -219,10 +222,10 @@ ${own.map((i, n) => `${n + 1}. [${i.category}] ${i.issue}\n   תיקון נדר�
 --- טקסט הקריינות הקיים ---
 ${entry.script.narration}`;
     try {
-      const res = await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt, model: REQUIRED_MODEL, response_json_schema: REPAIR_SCHEMA
+      const res = await callClaude({
+        system: REPAIR_RULES, prompt, schema: REPAIR_SCHEMA, effort: 'low', deadlineMs: 100000
       });
-      const narration = normalizeNarrationEnding(res && res.corrected_narration);
+      const narration = normalizeNarrationEnding(res.data && res.data.corrected_narration);
       if (!narration) throw new Error('התיקון חזר ריק');
       return { script_key: entry.script_key, narration, issues: own };
     } catch (error) {
@@ -262,89 +265,88 @@ function issueText(item) {
   return `[${item.category}] ${item.issue}`;
 }
 
-// הצינור המלא. maxRepairRounds=0 מריץ QA בלבד ללא תיקון.
-export async function runFullScriptQa(base44, jobId, { maxRepairRounds = MAX_REPAIR_ROUNDS } = {}) {
-  const job = await base44.entities.GenerationJob.get(jobId);
-  if (!job) return { ok: false, error: 'המשימה לא נמצאה', status: 404 };
-  if (!job.scripts || !job.scripts.general_script) {
-    return { ok: false, error: 'למשימה אין תסריטים לבדיקה', status: 422 };
-  }
+// QA מפוצל לצעדים קצרים — כל צעד הוא בקשה נפרדת שנשארת בתוך מגבלת הזמן של פונקציית Base44:
+//   runQaPass    → בדיקה דטרמיניסטית + בדיקת שפה לכל התסריטים, ואז סיום או בקשת תיקון
+//   runRepairPass → סבב תיקון ממוקד אחד לפי הבעיות שנשמרו בסבב ה-QA האחרון
+// runFullScriptQa מריץ את שניהם בלולאה (לשימוש ב-audit ידני).
 
+async function loadQaContext(base44, jobId) {
+  const job = await base44.entities.GenerationJob.get(jobId);
+  if (!job) return { error: { ok: false, error: 'המשימה לא נמצאה', status: 404 } };
+  if (!job.scripts || !job.scripts.general_script) {
+    return { error: { ok: false, error: 'למשימה אין תסריטים לבדיקה', status: 422 } };
+  }
   const systems = await base44.entities.SystemItem.filter({ project_id: job.project_id }, 'name_he', 500);
   const groups = await base44.entities.ScriptGroup.filter({ project_id: job.project_id }, 'order_index', 200);
-  const activeGroups = (groups || []).filter((g) => !g.cancelled);
+  return { job, systems: systems || [], activeGroups: (groups || []).filter((g) => !g.cancelled) };
+}
 
+export async function runQaPass(base44, jobId, { maxRepairRounds = MAX_REPAIR_ROUNDS } = {}): Promise<any> {
+  const ctx = await loadQaContext(base44, jobId);
+  if (ctx.error) return ctx.error;
+  const { job, systems, activeGroups } = ctx;
+  const previous = job.qa_results || {};
+  const round = Number(previous.repair_rounds || 0);
+
+  await base44.entities.GenerationJob.update(jobId, { status: 'qa' });
+
+  const scripts = job.scripts;
   const writerBlocking = dedupe(job.writer_blocking_issues);
   const writerGaps = dedupe(job.writer_documentation_gaps);
+  const deterministic = runDeterministicAudit(scripts, systems, activeGroups);
+  const language = await runLanguageQa(base44, scriptEntries(scripts));
 
-  let scripts = job.scripts;
-  let deterministic = runDeterministicAudit(scripts, systems || [], activeGroups);
-  let language = await runLanguageQa(base44, scriptEntries(scripts));
-
-  const initialLanguageBlocking = language.blocking.map(issueText);
-  const styleNotes = [...language.styleNotes];
-  const warnings = [...language.warnings];
-  const repairAttempts = [];
-  let round = 0;
+  const languageBlocking = language.blocking.map(issueText);
+  const styleNotes = dedupe([...(previous.language_style_notes || []), ...language.styleNotes.map((n) => n.note)]);
+  const warnings = dedupe([...(previous.warnings || []), ...language.warnings]);
+  const initialLanguageBlocking = round === 0 ? languageBlocking : (previous.initial_language_blocking_issues || []);
 
   // Auto-Repair רק כשהחסימה היחידה היא Language/Content — לא מייצרים מחדש שום תסריט
-  while (
-    language.blocking.length > 0 &&
+  const canRepair = language.blocking.length > 0 &&
     deterministic.blocking.length === 0 &&
     writerBlocking.length === 0 &&
-    round < maxRepairRounds
-  ) {
-    round += 1;
-    await base44.entities.GenerationJob.update(jobId, { status: 'repairing' });
+    round < maxRepairRounds;
 
-    const repair = await repairScripts(base44, scripts, language.blocking);
-    warnings.push(...repair.warnings);
-    repairAttempts.push({
-      round,
-      issues: language.blocking.map((i) => ({ script_key: i.script_key, category: i.category, issue: i.issue })),
-      repaired: repair.log
-    });
-    if (repair.repaired_keys.length === 0) break;
+  const qaResults = {
+    ...previous,
+    initial_language_blocking_issues: initialLanguageBlocking,
+    repair_attempts: previous.repair_attempts || [],
+    repair_rounds: round,
+    final_language_blocking_issues: languageBlocking,
+    final_deterministic_blocking_issues: deterministic.blocking,
+    deterministic_gaps: deterministic.gaps,
+    writer_blocking_issues: writerBlocking,
+    writer_documentation_gaps: writerGaps,
+    language_style_notes: styleNotes,
+    warnings,
+    pending_repair_issues: canRepair ? language.blocking : []
+  };
 
-    scripts = repair.scripts;
-    await base44.entities.GenerationJob.update(jobId, { scripts, status: 'qa' });
-
-    // QA אמיתי מחדש: דטרמיניסטי על כל התסריטים, שפה על התסריטים שתוקנו
-    deterministic = runDeterministicAudit(scripts, systems || [], activeGroups);
-    const rechecked = scriptEntries(scripts).filter((e) => repair.repaired_keys.includes(e.script_key));
-    language = await runLanguageQa(base44, rechecked);
-    styleNotes.push(...language.styleNotes);
-    warnings.push(...language.warnings);
+  if (canRepair) {
+    await base44.entities.GenerationJob.update(jobId, { status: 'repairing', qa_results: { ...qaResults, passed: false } });
+    return {
+      ok: false,
+      needs_repair: true,
+      job_id: jobId,
+      repair_round: round + 1,
+      blocking_issues: languageBlocking,
+      style_notes: styleNotes,
+      warnings
+    };
   }
 
-  const finalLanguageBlocking = language.blocking.map(issueText);
-  const blockingIssues = dedupe([...deterministic.blocking, ...writerBlocking, ...finalLanguageBlocking]);
+  const blockingIssues = dedupe([...deterministic.blocking, ...writerBlocking, ...languageBlocking]);
   // documentation_gaps = מידע שלא אומת במקורות בלבד. הערות סגנון נשמרות בנפרד.
   const documentationGaps = dedupe([...writerGaps, ...deterministic.gaps]);
-  const styleNoteTexts = dedupe(styleNotes.map((n) => n.note));
-  const qaWarnings = dedupe(warnings);
   const passed = blockingIssues.length === 0;
 
   await base44.entities.GenerationJob.update(jobId, {
     status: passed ? 'passed' : 'failed',
-    scripts,
-    qa_results: {
-      initial_language_blocking_issues: initialLanguageBlocking,
-      repair_attempts: repairAttempts,
-      repair_rounds: round,
-      final_language_blocking_issues: finalLanguageBlocking,
-      final_deterministic_blocking_issues: deterministic.blocking,
-      deterministic_gaps: deterministic.gaps,
-      writer_blocking_issues: writerBlocking,
-      writer_documentation_gaps: writerGaps,
-      language_style_notes: styleNoteTexts,
-      warnings: qaWarnings,
-      passed
-    },
+    qa_results: { ...qaResults, passed },
     blocking_issues: blockingIssues,
     documentation_gaps: documentationGaps,
-    qa_style_notes: styleNoteTexts,
-    qa_warnings: qaWarnings,
+    qa_style_notes: styleNotes,
+    qa_warnings: warnings,
     validation_issues: blockingIssues,
     error_message: passed ? '' : (blockingIssues[0] || job.error_message || ''),
     finished_at: new Date().toISOString()
@@ -359,12 +361,67 @@ export async function runFullScriptQa(base44, jobId, { maxRepairRounds = MAX_REP
 
   return {
     ok: passed,
+    needs_repair: false,
     job_id: jobId,
     blocking_issues: blockingIssues,
     documentation_gaps: documentationGaps,
-    style_notes: styleNoteTexts,
-    warnings: qaWarnings,
+    style_notes: styleNotes,
+    warnings,
     repair_rounds: round,
-    repair_attempts: repairAttempts
+    repair_attempts: qaResults.repair_attempts
   };
+}
+
+export async function runRepairPass(base44, jobId): Promise<any> {
+  const job = await base44.entities.GenerationJob.get(jobId);
+  if (!job) return { ok: false, error: 'המשימה לא נמצאה', status: 404 };
+  const previous = job.qa_results || {};
+  const issues = previous.pending_repair_issues || [];
+  if (issues.length === 0) return { ok: true, job_id: jobId, repaired_keys: [] };
+
+  await base44.entities.GenerationJob.update(jobId, { status: 'repairing' });
+  const round = Number(previous.repair_rounds || 0) + 1;
+  const repair = await repairScripts(base44, job.scripts, issues);
+
+  await base44.entities.GenerationJob.update(jobId, {
+    status: 'qa',
+    scripts: repair.repaired_keys.length > 0 ? repair.scripts : job.scripts,
+    qa_results: {
+      ...previous,
+      repair_rounds: round,
+      pending_repair_issues: [],
+      warnings: dedupe([...(previous.warnings || []), ...repair.warnings]),
+      repair_attempts: [
+        ...(previous.repair_attempts || []),
+        {
+          round,
+          issues: issues.map((i) => ({ script_key: i.script_key, category: i.category, issue: i.issue })),
+          repaired: repair.log
+        }
+      ]
+    }
+  });
+
+  return { ok: true, job_id: jobId, round, repaired_keys: repair.repaired_keys, warnings: repair.warnings };
+}
+
+// הצינור המלא בבקשה אחת. maxRepairRounds=0 מריץ QA בלבד ללא תיקון.
+export async function runFullScriptQa(base44, jobId, { maxRepairRounds = MAX_REPAIR_ROUNDS } = {}): Promise<any> {
+  // ריצה מלאה מתחילה מאפס — סבבי תיקון קודמים של המשימה אינם נספרים
+  const job = await base44.entities.GenerationJob.get(jobId);
+  if (job) {
+    await base44.entities.GenerationJob.update(jobId, {
+      qa_results: { ...(job.qa_results || {}), repair_rounds: 0, pending_repair_issues: [], repair_attempts: [] }
+    });
+  }
+  for (;;) {
+    const result = await runQaPass(base44, jobId, { maxRepairRounds });
+    if (!result.needs_repair) return result;
+    const repair = await runRepairPass(base44, jobId);
+    if (repair.error) return repair;
+    if (!repair.repaired_keys || repair.repaired_keys.length === 0) {
+      // התיקון לא הצליח — סבב QA אחרון ללא תיקון נוסף
+      return await runQaPass(base44, jobId, { maxRepairRounds: 0 });
+    }
+  }
 }

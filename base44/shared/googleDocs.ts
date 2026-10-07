@@ -53,7 +53,7 @@ function buildBlocks(project, job, groups) {
   ];
   if (meta) blocks.push({ text: meta, style: "SUBTITLE" });
   blocks.push({
-    text: `נוצר בתאריך ${new Date().toLocaleDateString("he-IL")} · מודל: ${job.actual_model || job.required_model} · גרסת פרומפט: ${job.prompt_version}`,
+    text: `נוצר בתאריך ${new Date().toLocaleDateString("he-IL")} · מודל: ${job.required_model || job.actual_model} · גרסת פרומפט: ${job.prompt_version}`,
     style: "NORMAL_TEXT",
   });
 

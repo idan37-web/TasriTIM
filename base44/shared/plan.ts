@@ -50,6 +50,12 @@ export async function validatePlan(base44, projectId) {
     : [];
   for (const packet of evidencePackets.filter((p) => !p.evidence_sufficient)) {
     const missing = packet.unmatched_component_terms || [];
+    // Claude זיהה הוראות תפעול בעמודים מסוימים, גם אם המונחים בספר שונים — ניתוב הראיות הסמנטי יאתר אותם בכתיבה
+    const system = included.find((s) => s.id === packet.system_id);
+    if (system && system.has_ops_instructions && (system.source_pages || []).length > 0) {
+      warnings.push(`למערכת "${packet.system_name}" לא נמצאה התאמת מונחים בספר הנהג; המקור יאותר בניתוב הסמנטי בעמודים ${system.source_pages.join(', ')}`);
+      continue;
+    }
     blockers.push(missing.length > 0
       ? `למערכת "${packet.system_name}" חסר מקור תפעולי עבור: ${missing.join(', ')}`
       : `למערכת "${packet.system_name}" לא נמצא מקור תפעולי ייעודי בספר הנהג`);

@@ -86,9 +86,9 @@ export default function Step2Uploads({ project, goToStep }) {
         refresh();
       }
 
-      // עיבוד החלקים במקביל (6 בכל פעם) — כשל בחלק אחד לא עוצר את השאר
-      for (let i = 0; i < created.length; i += 6) {
-        await Promise.all(created.slice(i, i + 6).map((d) => parseDoc(d.id)));
+      // עיבוד החלקים במקביל (3 בכל פעם) — כל חלק סרוק מפעיל כמה קריאות OCR מקבילות בעצמו
+      for (let i = 0; i < created.length; i += 3) {
+        await Promise.all(created.slice(i, i + 3).map((d) => parseDoc(d.id)));
       }
     } finally {
       setUploading(null);

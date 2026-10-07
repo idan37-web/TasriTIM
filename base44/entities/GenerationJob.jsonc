@@ -24,7 +24,7 @@
     },
     "required_model": {
       "type": "string",
-      "default": "gpt-5.6-sol"
+      "default": "Claude Opus 5.5"
     },
     "actual_model": {
       "type": "string"
@@ -48,6 +48,11 @@
     "scripts": {
       "type": "object",
       "additionalProperties": true
+    },
+    "evidence_selection": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "ניתוב ראיות סמנטי לכל תסריט: { target: { system_id: section_id[] } }"
     },
     "validation_issues": {
       "type": "array",

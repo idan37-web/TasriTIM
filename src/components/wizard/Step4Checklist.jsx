@@ -190,7 +190,7 @@ export default function Step4Checklist({ project, goToStep }) {
                         checked={!!s.allow_partial_evidence}
                         onCheckedChange={(v) => togglePartial(s, !!v)}
                       />
-                      התעלמות מחוסר הסבר תפעולי פרטני — כתיבה לפי המידע המאומת בלבד
+                      התעלמות מחוסר הסבר תפעולי פרטני: כתיבה לפי המידע המאומת בלבד
                     </label>
                   )}
                   {infoId === s.id && (

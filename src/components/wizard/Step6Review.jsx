@@ -40,7 +40,7 @@ export default function Step6Review({ project, updateProject, goToStep }) {
   const excluded = data.systems.filter((s) => !s.included);
   const activeGroups = data.groups.filter((g) => !g.cancelled).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
   const blockers = [...(validation.blockers || [])];
-  if (!model.available) blockers.push(`המודל ${model.required_model || 'Claude'} אינו זמין, היצירה חסומה${model.error ? ` (${model.error})` : ''}`);
+  if (!model.available) blockers.push(`המודל ${model.required_model || 'ה-AI'} אינו זמין, היצירה חסומה${model.error ? ` (${model.error})` : ''}`);
   const canApprove = blockers.length === 0;
 
   const approve = async () => {
@@ -134,7 +134,7 @@ export default function Step6Review({ project, updateProject, goToStep }) {
           </div>
           <div className="flex items-center gap-2">
             {model.available ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-red-400" />}
-            מודל {model.required_model || 'Claude'}: {model.available ? 'זמין' : 'אינו זמין'}
+            מודל {model.required_model || 'ה-AI'}: {model.available ? 'זמין' : 'אינו זמין'}
           </div>
         </div>
       </Section>

@@ -140,6 +140,7 @@ export async function runLanguageQa(base44, entries) {
   const results = await withConcurrency(batches, CONCURRENCY, async (batch) => {
     try {
       const res = await callClaude({
+        base44,
         system: LANGUAGE_QA_SYSTEM,
         prompt: languageQaPrompt(batch),
         schema: LANGUAGE_QA_SCHEMA,
@@ -223,7 +224,7 @@ ${own.map((i, n) => `${n + 1}. [${i.category}] ${i.issue}\n   תיקון נדר�
 ${entry.script.narration}`;
     try {
       const res = await callClaude({
-        system: REPAIR_RULES, prompt, schema: REPAIR_SCHEMA, effort: 'low', deadlineMs: 100000
+        base44, system: REPAIR_RULES, prompt, schema: REPAIR_SCHEMA, effort: 'low', deadlineMs: 100000
       });
       const narration = normalizeNarrationEnding(res.data && res.data.corrected_narration);
       if (!narration) throw new Error('התיקון חזר ריק');

@@ -12,7 +12,7 @@
 ## 2. סטאק
 - Frontend: React 18 + Vite + Tailwind + shadcn/ui, עברית RTL.
 - Backend: Base44 BaaS — entities (JSON schema), backend functions (Deno, `base44/functions/<name>/entry.ts`), shared modules ב-`base44/shared/`.
-- LLM: Claude דרך Anthropic API (`base44/shared/llm.ts`), במקום `Core.InvokeLLM`. ברירת מחדל `claude-opus-5-5`, נשלט בסודות (ראו README). אין fallback למודל חלש — אם המפתח חסר או המודל לא זמין, היצירה חסומה.
+- LLM: שכבה אחת `base44/shared/llm.ts` עם שני מסלולים: `Core.InvokeLLM` של Base44 (ברירת מחדל, מודל `gpt_5_6_sol`, ניתן להחלפה לכל משימה בנפרד) או Anthropic API ישירות כשמוגדר `ANTHROPIC_API_KEY`. פירוט ב-README. אם המודל לא זמין, היצירה חסומה.
 - Google Docs/Drive: דרך connector `googledocs` (scopes: documents, drive.file, email), בצד השרת בלבד.
 
 ## 3. ישויות (base44/entities)
@@ -90,8 +90,8 @@ src/components/wizard/Step1..Step7                 האשף
 src/pages/{Projects,ProjectWizard,Admin}.jsx       דפים
 ``
 
-## 10. מעבר ל-Claude (אוקטובר 2026)
-- **שכבת מודל אחת** — `base44/shared/llm.ts`: `callClaude()` עם פלט מובנה (`output_config.format`), streaming, תקרת זמן לכל קריאה, `fallbacks: "default"` לסירובים, ו-prompt caching על ה-system. כל `InvokeLLM` הוסר.
+## 10. שכבת מודל ותיקוני צינור (אוקטובר 2026)
+- **שכבת מודל אחת** — `base44/shared/llm.ts`: `callClaude()` מנתבת ל-InvokeLLM (ברירת מחדל) או ל-Anthropic API. סכמת JSON מחייבת, תקרת זמן לכל קריאה, ושלוש דרגות מודל: `writer` / `main` / `fast`. במסלול Anthropic נוספים streaming, `fallbacks: "default"` ו-prompt caching.
 - **חילוץ מסמכים** — PDF נקרא משכבת הטקסט עמוד-עמוד (`unpdf`), ללא מודל שמסכם. עמוד ריק, סרוק או בעברית הפוכה נשלח ל-Claude כ-PDF של 2 עמודים (OCR כולל טבלאות וכיתובי איורים). צילומי מסך נקראים ב-vision. DOCX/XLSX נשארו ב-`ExtractDataFromUploadedFile`.
 - **ניתוב ראיות סמנטי** — `selectEvidenceWithClaude()` ב-`evidence.ts`: Claude קורא אינדקס קומפקטי של כל ספר הנהג ובוחר עד 10 מקטעים לכל מערכת. המקטעים האלה נכנסים ראשונים לחבילת הראיות, במלואם. פותר את בעיית המונחים השונים בין מפרט לספר (סעיף 8.3).
 - **כתיבה** — הפרומפט הנעול + כללי הכתיבה נשלחים כ-system (נשמרים ב-cache בין התסריטים), הנתונים ב-`<project_data>`. ניסיון 1 במאמץ `medium`, ניסיונות 2–3 במאמץ `low` (מהיר יותר). שגיאה קבועה (מפתח שגוי) אינה מנוסה שוב.

@@ -56,6 +56,7 @@ export default async function(req) {
         why: s.why_training
       }));
       const res = await callClaude({
+        base44,
         effort: 'medium',
         deadlineMs: 100000,
         prompt: `אתה מתכנן מפת תסריטי הדרכה לרכב. לפניך רשימת מערכות שאושרו להכללה.

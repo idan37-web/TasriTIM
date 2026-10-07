@@ -1,20 +1,23 @@
 # מחולל תסריטי הדרכה לרכב
 
-## הגדרת מודל ה-AI (Claude)
+## הגדרת מודל ה-AI
 
-כל הקריאות למודל עוברות דרך `base44/shared/llm.ts` ישירות ל-Anthropic API, ולא דרך `Core.InvokeLLM`.
+כל הקריאות למודל עוברות דרך `base44/shared/llm.ts`, באחד משני מסלולים:
 
-1. צרו מפתח API ב-[Claude Console](https://platform.claude.com/settings/keys).
-2. ב-Base44: הגדרות האפליקציה ← Secrets, הוסיפו `ANTHROPIC_API_KEY` (או `base44 secrets set ANTHROPIC_API_KEY=...`).
-3. אופציונלי:
+**מסלול Base44 (ברירת מחדל, בלי הגדרה):** `Core.InvokeLLM` עם בחירת מודל מפורשת. ברירת המחדל היא `gpt_5_6_sol`, המזהה שכבר עבד באפליקציה. לא נדרש מפתח, והעלות יורדת מקרדיטי האינטגרציה של תוכנית Base44.
+
+**מסלול Anthropic (אופציונלי):** מוסיפים את הסוד `ANTHROPIC_API_KEY` והמערכת עוברת אליו אוטומטית, עם Claude Sonnet 5.5 כברירת מחדל. בתשלום ל-Anthropic.
 
 | סוד | ברירת מחדל | שימוש |
 |---|---|---|
-| `CLAUDE_MODEL` | `claude-opus-5-5` | כתיבה, זיהוי מערכות, בדיקת עברית |
-| `CLAUDE_FAST_MODEL` | כמו `CLAUDE_MODEL` | OCR וניתוב ראיות. `claude-sonnet-5-5` זול ומהיר יותר |
-| `CLAUDE_WRITER_EFFORT` | `medium` | מאמץ הניסיון הראשון בכתיבה (`low`/`medium`/`high`) |
+| `LLM_PROVIDER` | אוטומטי | `base44` או `anthropic`, כדי לכפות מסלול |
+| `BASE44_LLM_MODEL` | `gpt_5_6_sol` | המודל לכל המשימות במסלול Base44 |
+| `BASE44_LLM_WRITER_MODEL` | כמו הראשי | מודל לכתיבת התסריטים בלבד |
+| `BASE44_LLM_FAST_MODEL` | כמו הראשי | OCR וניתוב ראיות, מתאים למודל זול |
+| `CLAUDE_MODEL` / `CLAUDE_WRITER_MODEL` / `CLAUDE_FAST_MODEL` | `claude-sonnet-5-5` | המקבילים במסלול Anthropic |
+| `CLAUDE_WRITER_EFFORT` | `medium` | מאמץ הכתיבה במסלול Anthropic |
 
-אחרי ההגדרה, מסך "ניהול" מציג אם המודל זמין.
+מזהי המודלים ב-Base44 מופיעים בעמוד Models בתיעוד של Base44. מסך "ניהול" בודק כל מודל שהוגדר ומציג אם הוא זמין, כך שמזהה שגוי מתגלה לפני יצירה.
 
 ---
 

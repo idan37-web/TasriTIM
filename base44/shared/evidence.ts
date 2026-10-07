@@ -348,7 +348,7 @@ const ROUTER_SCHEMA = {
   }
 };
 
-export async function selectEvidenceWithClaude(systems, allSections, vehicle) {
+export async function selectEvidenceWithClaude(base44, systems, allSections, vehicle) {
   if (!systems.length || !allSections.length) return {};
   const index = buildSectionIndex(allSections);
   const system = `אתה מאתר מקורות בספר נהג של רכב, לקראת כתיבת תסריט הדרכה.
@@ -368,6 +368,7 @@ ${JSON.stringify(systems.map((s) => ({ system_id: s.id, name_he: s.name_he, name
 </systems>`;
 
   const { data } = await callClaude({
+    base44,
     system,
     prompt,
     schema: ROUTER_SCHEMA,

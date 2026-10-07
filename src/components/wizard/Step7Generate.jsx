@@ -24,8 +24,8 @@ const MAX_REPAIR_ROUNDS = 2;
 // מצב כל תסריט בצינור: ממתין ← איתור מקורות ← כתיבה ← נכתב / נכשל
 const TASK_STATE = {
   pending: { label: 'ממתין', icon: Circle, cls: 'text-stone-300' },
-  evidence: { label: 'Claude מאתר מקורות בספר הנהג', icon: Search, cls: 'text-signal-500', spin: true },
-  writing: { label: 'Claude כותב את התסריט', icon: PenLine, cls: 'text-signal-500', spin: true },
+  evidence: { label: 'מאתר מקורות בספר הנהג', icon: Search, cls: 'text-signal-500', spin: true },
+  writing: { label: 'כותב את התסריט', icon: PenLine, cls: 'text-signal-500', spin: true },
   retry: { label: 'ניסיון נוסף במאמץ מהיר יותר', icon: PenLine, cls: 'text-signal-600', spin: true },
   done: { label: 'נכתב', icon: CheckCircle2, cls: 'text-emerald-500' },
   error: { label: 'נכשל', icon: XCircle, cls: 'text-red-500' },
@@ -266,7 +266,7 @@ export default function Step7Generate({ project }) {
         <div className="eyebrow mb-1">שלב 7</div>
         <h2 className="text-xl font-bold text-stone-900 mb-1">יצירת התסריטים והמסמך</h2>
         <p className="text-sm text-stone-500 mb-5 leading-relaxed">
-          Claude כותב כל תסריט רק מתוך הראיות שבספר הנהג. מידע שלא נמצא מושמט מהקריינות ומדווח כפער תיעוד.
+          המודל כותב כל תסריט רק מתוך הראיות שבספר הנהג. מידע שלא נמצא מושמט מהקריינות ומדווח כפער תיעוד.
           מסמך Google Docs נוצר רק אחרי שכל הבדיקות עברו.
         </p>
         <ol className="flex flex-wrap items-center gap-x-2 gap-y-2 mb-6 text-xs text-stone-500">

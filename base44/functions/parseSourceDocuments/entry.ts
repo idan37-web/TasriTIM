@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { PDFDocument } from 'npm:pdf-lib@1.17.1';
 import { extractText, getDocumentProxy } from 'npm:unpdf@1.8.1';
-import { callClaude, bytesToBase64 } from '../../shared/llm.ts';
+import { callClaude, bytesToBase64, llmProvider } from '../../shared/llm.ts';
 
 // מחלץ טקסט ממסמך מקור ושומר מקטעים עם עמודים וכותרות.
 // PDF: שכבת הטקסט נקראת ישירות, עמוד אחר עמוד (מדויק ומהיר, בלי מודל שמסכם או משמיט).
@@ -12,6 +12,9 @@ import { callClaude, bytesToBase64 } from '../../shared/llm.ts';
 
 const OCR_PAGES_PER_CALL = 2;
 const OCR_CONCURRENCY = 8;
+// במסלול Base44 הקובץ המלא נשלח כקישור בכל קריאה — ולכן מתמללים יותר עמודים בכל קריאה, ובפחות מקביליות
+const BASE44_OCR_PAGES_PER_CALL = 4;
+const BASE44_OCR_CONCURRENCY = 4;
 const MIN_PAGE_CHARS = 120;
 
 const SECTIONS_SCHEMA = {
@@ -68,6 +71,32 @@ async function withConcurrency(items, limit, worker) {
   return results;
 }
 
+// מסלול Base44: הקובץ נשלח כקישור, והמודל מתבקש לתמלל טווח עמודים מסוים בלבד
+async function transcribePdfPagesByUrl(base44, fileUrl, pageIndexes, fileName) {
+  const batches = [];
+  for (let i = 0; i < pageIndexes.length; i += BASE44_OCR_PAGES_PER_CALL) {
+    batches.push(pageIndexes.slice(i, i + BASE44_OCR_PAGES_PER_CALL));
+  }
+  const results = await withConcurrency(batches, BASE44_OCR_CONCURRENCY, async (batch) => {
+    const pageList = batch.map((index) => index + 1).join(', ');
+    const { data } = await callClaude({
+      base44,
+      system: TRANSCRIBE_SYSTEM,
+      prompt: `בקובץ המצורף (${fileName}) תמלל אך ורק את העמודים: ${pageList}. מספור העמודים הוא לפי סדר העמודים בקובץ, החל מ-1. בשדה page ציין את מספר העמוד מתוך הרשימה הזו. אל תתמלל עמודים אחרים.`,
+      fileUrls: [fileUrl],
+      schema: SECTIONS_SCHEMA,
+      tier: 'fast',
+      deadlineMs: 100000
+    });
+    const allowed = new Set(batch.map((index) => index + 1));
+    return ((data && data.sections) || []).map((section) => {
+      const page = Math.round(Number(section.page) || 0);
+      return { page: allowed.has(page) ? page : batch[0] + 1, heading: section.heading || '', text: section.text || '' };
+    });
+  });
+  return results.flat();
+}
+
 async function transcribePdfPages(pdfBytes, pageIndexes, fileName) {
   const source = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const batches = [];
@@ -96,7 +125,7 @@ async function transcribePdfPages(pdfBytes, pageIndexes, fileName) {
   return results.flat();
 }
 
-async function extractPdf(pdfBytes, fileName) {
+async function extractPdf(pdfBytes, fileName, base44 = null, fileUrl = '') {
   let pageTexts = [];
   try {
     const pdf = await getDocumentProxy(new Uint8Array(pdfBytes));
@@ -114,17 +143,23 @@ async function extractPdf(pdfBytes, fileName) {
     else textSections.push({ page: index + 1, heading: firstLine(text), text });
   });
 
-  const ocrSections = ocrPages.length > 0 ? await transcribePdfPages(pdfBytes, ocrPages, fileName) : [];
+  const ocrSections = ocrPages.length === 0
+    ? []
+    : llmProvider() === 'base44'
+      ? await transcribePdfPagesByUrl(base44, fileUrl, ocrPages, fileName)
+      : await transcribePdfPages(pdfBytes, ocrPages, fileName);
   const sections = [...textSections, ...ocrSections].sort((a, b) => a.page - b.page);
   return { sections, pageCount: pageTexts.length, ocrPageCount: ocrPages.length };
 }
 
-async function extractImage(bytes, ext, fileName) {
+async function extractImage(bytes, ext, fileName, base44, fileUrl) {
   const mediaType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+  const viaUrl = llmProvider() === 'base44';
   const { data } = await callClaude({
+    base44,
     system: TRANSCRIBE_SYSTEM,
     prompt: `תמלל את צילום המסך המצורף (${fileName}). זהו עמוד אחד — page=1. תאר גם את מבנה המסך: שמות לשוניות, תפריטים וכפתורים כפי שהם מופיעים.`,
-    documents: [{ kind: 'image', base64: bytesToBase64(bytes), mediaType }],
+    ...(viaUrl ? { fileUrls: [fileUrl] } : { documents: [{ kind: 'image', base64: bytesToBase64(bytes), mediaType }] }),
     schema: SECTIONS_SCHEMA,
     tier: 'fast',
     effort: 'low',
@@ -157,7 +192,7 @@ export default async function(req) {
       // קישור חתום וזמני בלבד — הקבצים נשארים פרטיים
       const { signed_url } = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({
         file_uri: doc.file_uri,
-        expires_in: 900
+        expires_in: 1800
       });
       // קבצי טקסט פשוט נקראים ישירות — חילוץ מסמכים אינו תומך בהם
       const ext = String(doc.file_name || '').split('.').pop().toLowerCase();
@@ -182,13 +217,13 @@ export default async function(req) {
       } else if (ext === 'pdf') {
         const fileRes = await fetch(signed_url);
         if (!fileRes.ok) throw new Error('לא ניתן להוריד את הקובץ');
-        const pdf = await extractPdf(new Uint8Array(await fileRes.arrayBuffer()), doc.file_name || '');
+        const pdf = await extractPdf(new Uint8Array(await fileRes.arrayBuffer()), doc.file_name || '', base44, signed_url);
         sections = pdf.sections;
         ocrPageCount = pdf.ocrPageCount;
       } else if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
         const fileRes = await fetch(signed_url);
         if (!fileRes.ok) throw new Error('לא ניתן להוריד את הקובץ');
-        sections = await extractImage(new Uint8Array(await fileRes.arrayBuffer()), ext, doc.file_name || '');
+        sections = await extractImage(new Uint8Array(await fileRes.arrayBuffer()), ext, doc.file_name || '', base44, signed_url);
       } else {
         // DOCX / XLSX / CSV — חילוץ מסמכים של Base44
         const res = await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({

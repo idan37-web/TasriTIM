@@ -125,10 +125,14 @@ export default function Admin() {
             <><XCircle className="w-4 h-4 text-red-400" /> {model.required_model || 'המודל'} אינו זמין, יצירת תסריטים חסומה{model.error ? ` (${model.error})` : ''}</>
           )}
         </div>
-        {model && !model.available && (
+        {model && (
           <p className="text-xs text-stone-400 mt-2 leading-relaxed">
-            יש להגדיר את הסוד <span dir="ltr" className="font-mono">ANTHROPIC_API_KEY</span> בהגדרות האפליקציה ב‑Base44
-            (Settings ← Secrets). אפשר לבחור מודל אחר עם הסוד <span dir="ltr" className="font-mono">CLAUDE_MODEL</span>.
+            {model.provider === 'anthropic'
+              ? 'המודל רץ בחיבור ישיר ל‑Anthropic API, על חשבון מפתח ה‑API שהוגדר.'
+              : 'המודל רץ דרך InvokeLLM של Base44, על חשבון קרדיטי האינטגרציה של התוכנית. לא נדרש מפתח נוסף.'}
+            {!model.available && model.provider !== 'anthropic' && (
+              <> אם המודל אינו זמין, בדקו שנותרו קרדיטי אינטגרציה, או הגדירו מודל אחר בסוד <span dir="ltr" className="font-mono">BASE44_LLM_MODEL</span>.</>
+            )}
           </p>
         )}
       </div>

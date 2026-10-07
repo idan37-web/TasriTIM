@@ -123,7 +123,7 @@ async function handleStart(base44, body) {
   }
 
   // 2. אימות המודל — ללא fallback למודל חלש
-  const model = await pingModel();
+  const model = await pingModel(base44);
   if (!model.available) {
     return Response.json({ ok: false, blockers: [`המודל ${model.label} אינו זמין — היצירה חסומה (${model.error || 'אין תשובה'})`] }, { status: 422 });
   }
@@ -138,8 +138,8 @@ async function handleStart(base44, body) {
     project_id,
     status: 'generating',
     prompt_version: activePrompt.version_number,
-    required_model: model.label,
-    actual_model: model.model,
+    required_model: modelLabel(modelFor('writer')),
+    actual_model: modelFor('writer'),
     sources_signature: signature,
     started_at: new Date().toISOString(),
     blocking_issues: [],
@@ -194,7 +194,7 @@ async function handleEvidence(base44, body) {
 
   try {
     const sections = await fetchManualSections(base44, job.project_id);
-    const selection = await selectEvidenceWithClaude(resolved.scriptSystems, sections, resolved.project);
+    const selection = await selectEvidenceWithClaude(base44, resolved.scriptSystems, sections, resolved.project);
     const current = await base44.entities.GenerationJob.get(job_id);
     await base44.entities.GenerationJob.update(job_id, {
       evidence_selection: { ...(current.evidence_selection || {}), [target]: selection }
@@ -269,6 +269,8 @@ async function handleWrite(base44, body) {
         : ' — תסריט ממוקד למערכות המפורטות בלבד.');
 
     const llm = await callClaude({
+      base44,
+      tier: 'writer',
       system: activePrompt.content + WRITER_RULES,
       prompt: `${taskInstruction}\n\n<project_data>\n${JSON.stringify(contextData)}\n</project_data>`,
       schema: SCRIPT_SCHEMA,

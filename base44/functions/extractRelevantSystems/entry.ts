@@ -145,6 +145,7 @@ ${manualOutline}
 </manual_context>`;
 
     const { data: result } = await callClaude({
+      base44,
       system,
       prompt,
       effort: 'medium',

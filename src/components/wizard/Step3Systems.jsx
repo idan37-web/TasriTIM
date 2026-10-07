@@ -78,7 +78,7 @@ export default function Step3Systems({ project, goToStep }) {
           <div>
             <h2 className="text-lg font-bold text-stone-900 mb-1">זיהוי מערכות רלוונטיות</h2>
             <p className="text-sm text-stone-500 max-w-xl">
-              Claude מנתח את המפרט מול ספר הנהג, על בסיס המסמכים שהועלו בלבד: ללא ידע חיצוני וללא הגבלת מספר מערכות.
+              המודל מנתח את המפרט מול ספר הנהג, על בסיס המסמכים שהועלו בלבד: ללא ידע חיצוני וללא הגבלת מספר מערכות.
             </p>
           </div>
           <Button onClick={runExtraction} disabled={running} className="rounded-xl bg-stone-900 hover:bg-stone-700">

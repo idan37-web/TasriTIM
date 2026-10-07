@@ -12,7 +12,14 @@
 //   BASE44_LLM_WRITER_MODEL מודל לכתיבת התסריטים בלבד (למשל מודל חזק יותר רק לשלב הזה)
 //   BASE44_LLM_FAST_MODEL   מודל למשימות עזר (OCR, ניתוב ראיות) — כאן מתאים מודל זול
 //   CLAUDE_MODEL / CLAUDE_WRITER_MODEL / CLAUDE_FAST_MODEL — המקבילים במסלול anthropic
-import Anthropic from 'npm:@anthropic-ai/sdk@^0.131.0';
+// טעינה עצלה: ה-SDK של Anthropic נטען רק במסלול anthropic, כך שבמסלול Base44 אין תלות בחבילה חיצונית
+import type Anthropic from 'npm:@anthropic-ai/sdk@^0.131.0';
+// deno-lint-ignore no-explicit-any
+let AnthropicSdk: any = null;
+async function loadSdk() {
+  if (!AnthropicSdk) AnthropicSdk = (await import('npm:@anthropic-ai/sdk@^0.131.0')).default;
+  return AnthropicSdk;
+}
 
 // מסלול Anthropic: Sonnet מספיק לרוב העבודה ועולה כמחצית מ-Opus
 export const DEFAULT_MODEL = 'claude-sonnet-5-5';
@@ -76,12 +83,13 @@ export function llmProvider(): Provider {
 
 let client: Anthropic | null = null;
 
-function getClient(): Anthropic {
+async function getClient(): Promise<Anthropic> {
+  const Sdk = await loadSdk();
   const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
   if (!apiKey) {
     throw new LlmError('חסר הסוד ANTHROPIC_API_KEY בהגדרות האפליקציה — לא ניתן להפעיל את המודל', 'missing_key', false);
   }
-  if (!client) client = new Anthropic({ apiKey, maxRetries: 2 });
+  if (!client) client = new Sdk({ apiKey, maxRetries: 2 });
   return client;
 }
 
@@ -195,7 +203,8 @@ async function callBase44<T = any>(req: LlmRequest): Promise<LlmResult<T>> {
 
 // deno-lint-ignore no-explicit-any
 async function callAnthropic<T = any>(req: LlmRequest): Promise<LlmResult<T>> {
-  const anthropic = getClient();
+  const anthropic = await getClient();
+  const Sdk = await loadSdk();
   const model = modelFor(req.tier || 'main');
   const controller = new AbortController();
   const timer = req.deadlineMs ? setTimeout(() => controller.abort(), req.deadlineMs) : null;
@@ -232,16 +241,16 @@ async function callAnthropic<T = any>(req: LlmRequest): Promise<LlmResult<T>> {
     if (controller.signal.aborted) {
       throw new LlmError(`המודל לא סיים בתוך ${Math.round((req.deadlineMs || 0) / 1000)} שניות`, 'deadline', true);
     }
-    if (error instanceof Anthropic.AuthenticationError) {
+    if (error instanceof Sdk.AuthenticationError) {
       throw new LlmError('מפתח ה-API של Anthropic אינו תקין', 'auth', false);
     }
-    if (error instanceof Anthropic.BadRequestError) {
+    if (error instanceof Sdk.BadRequestError) {
       throw new LlmError(`בקשה לא תקינה למודל: ${error.message}`, 'bad_request', false);
     }
-    if (error instanceof Anthropic.RateLimitError) {
+    if (error instanceof Sdk.RateLimitError) {
       throw new LlmError('חריגה ממגבלת הקצב של Anthropic — נסו שוב בעוד רגע', 'rate_limit', true);
     }
-    if (error instanceof Anthropic.APIError) {
+    if (error instanceof Sdk.APIError) {
       throw new LlmError(`שגיאת Anthropic (${error.status}): ${error.message}`, 'api', true);
     }
     throw new LlmError(`תקלת תקשורת עם המודל: ${(error as Error).message}`, 'network', true);
